@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孕期健康管理助手 - 專業護理版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #fef2f2; color: #4b5563; }
+        .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #fee2e2; }
+        .btn-pink { background: #f472b6; color: white; border-radius: 0.5rem; transition: all 0.2s; }
+        .btn-pink:hover { background: #ec4899; }
+        .tab-active { border-bottom: 3px solid #f472b6; color: #f472b6; font-weight: bold; }
+    </style>
+</head>
+<body class="pb-10">
+    <div class="max-w-md mx-auto p-4">
+        <header class="text-center py-6">
+            <h1 class="text-2xl font-bold text-pink-600">🤰 孕期健康助手</h1>
+            <p class="text-xs text-gray-400 mt-1">依據國健署 BMI 標準建議</p>
+        </header>
+
+        <div class="flex border-b border-gray-200 mb-6 text-center">
+            <button onclick="showPage('bmi')" id="btn-bmi" class="flex-1 py-2 tab-active">體重曲線</button>
+            <button onclick="showPage('glu')" id="btn-glu" class="flex-1 py-2 text-gray-400">血糖紀錄</button>
+            <button onclick="showPage('data')" id="btn-data" class="flex-1 py-2 text-gray-400">數據匯出</button>
+        </div>
+
+        <div id="page-bmi" class="space-y-4">
+            <div class="card p-4">
+                <h3 class="font-bold text-pink-600 mb-3 underline">1. 孕前基本設定</h3>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <input type="number" id="h" placeholder="身高 cm" class="border rounded p-2 text-sm outline-none focus:border-pink-300">
+                    <input type="number" id="w" placeholder="孕前體重 kg" class="border rounded p-2 text-sm outline-none focus:border-pink-300">
+                </div>
+                <button onclick="saveProfile()" class="w-full btn-pink py-2 text-sm font-bold">儲存並查看建議</button>
+                <div id="bmi-result" class="hidden mt-3 p-3 bg-pink-50 rounded text-xs leading-loose text-pink-800 border border-pink-100"></div>
+            </div>
+
+            <div class="card p-4">
+                <h3 class="font-bold text-gray-700 mb-3">2. 每週體重紀錄</h3>
+                <div class="flex gap-2 mb-4">
+                    <input type="number" id="week" placeholder="週數" class="w-20 border rounded p-2 text-sm">
+                    <input type="number" id="now-w" placeholder="目前 kg" class="flex-1 border rounded p-2 text-sm">
+                    <button onclick="addWeight()" class="btn-pink px-4 text-sm font-bold">紀錄</button>
+                </div>
+                <canvas id="weightChart" class="mb-4"></canvas>
+                <div id="weight-list" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div id="page-glu" class="hidden space-y-4">
+            <div class="card p-4">
+                <h3 class="font-bold text-gray-700 mb-3">血糖即時分析</h3>
+                <div class="space-y-3">
+                    <select id="glu-time" class="w-full border rounded p-2 text-sm">
+                        <option value="fasting">晨起空腹 (標準 < 95)</option>
+                        <option value="after2h">飯後 2 小時 (標準 < 120)</option>
+                    </select>
+                    <input type="number" id="glu-val" placeholder="血糖值 mg/dL" class="w-full border rounded p-2 text-sm">
+                    <button onclick="addGlu()" class="w-full btn-pink py-2 text-sm font-bold">儲存紀錄</button>
+                </div>
+            </div>
+            <div id="glu-list" class="space-y-2"></div>
+        </div>
+
+        <div id="page-data" class="hidden">
+            <div class="card p-6 text-center">
+                <p class="text-gray-500 text-sm mb-6">產檢時，可點擊下方按鈕將資料匯出成 CSV 檔提供給護理師或醫師。</p>
+                <button onclick="exportData()" class="w-full btn-pink py-3 font-bold mb-4">一鍵匯出 CSV 檔案</button>
+                <button onclick="clearData()" class="w-full border border-gray-300 rounded py-2 text-xs text-gray-400">清空所有紀錄</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let profile = JSON.parse(localStorage.getItem('p_prof')) || null;
+        let weights = JSON.parse(localStorage.getItem('p_w')) || [];
+        let glucoses = JSON.parse(localStorage.getItem('p_g')) || [];
+        let chart = null;
+
+        function showPage(p) {
+            ['bmi','glu','data'].forEach(x => {
+                document.getElementById('page-'+x).classList.add('hidden');
+                document.getElementById('btn-'+x).classList.remove('tab-active');
+                document.getElementById('btn-'+x).classList.add('text-gray-400');
+            });
+            document.getElementById('page-'+p).classList.remove('hidden');
+            document.getElementById('btn-'+p).classList.add('tab-active');
+            if(p === 'bmi') initChart();
+        }
+
+        function saveProfile() {
+            const h = document.getElementById('h').value / 100;
+            const w = document.getElementById('w').value;
+            if(!h || !w) return alert("請填寫身高體重");
+            const bmi = (w / (h * h)).toFixed(1);
+            let advice = "";
+            if(bmi < 18.5) advice = "建議整個孕期增加約 12.5～18 公斤。";
+            else if(bmi <= 24.9) advice = "建議整個孕期增加約 11.5～16 公斤。";
+            else if(bmi <= 29.9) advice = "建議整個孕期增加約 7～11.5 公斤。";
+            else advice = "屬於肥胖者，建議體重增加應控制在 5～9 公斤以下。";
+            
+            profile = { h, w, bmi, advice };
+            localStorage.setItem('p_prof', JSON.stringify(profile));
+            renderProfile();
+        }
+
+        function renderProfile() {
+            if(!profile) return;
+            const res = document.getElementById('bmi-result');
+            res.classList.remove('hidden');
+            res.innerHTML = `<strong>您的孕前 BMI 為 ${profile.bmi}</strong><br>${profile.advice}<br>💡 衛教提醒：初期(0-12週)建議增 1-2kg，中期建議增 5-6kg，後期建議增 4-6kg。`;
+            document.getElementById('h').value = profile.h * 100;
+            document.getElementById('w').value = profile.w;
+        }
+
+        function addWeight() {
+            const week = document.getElementById('week').value;
+            const val = document.getElementById('now-w').value;
+            if(!week || !val) return;
+            weights.push({ id: Date.now(), week: parseInt(week), val: parseFloat(val), date: new Date().toLocaleDateString() });
+            weights.sort((a,b) => a.week - b.week);
+            localStorage.setItem('p_w', JSON.stringify(weights));
+            renderWeight();
+            initChart();
+        }
+
+        function delW(id) {
+            weights = weights.filter(x => x.id !== id);
+            localStorage.setItem('p_w', JSON.stringify(weights));
+            renderWeight();
+            initChart();
+        }
+
+        function renderWeight() {
+            const list = document.getElementById('weight-list');
+            list.innerHTML = weights.slice().reverse().map(x => `
+                <div class="flex justify-between bg-white p-2 text-sm border-b items-center">
+                    <span>第 ${x.week} 週: <strong>${x.val} kg</strong></span>
+                    <button onclick="delW(${x.id})" class="text-red-300">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function addGlu() {
+            const time = document.getElementById('glu-time').value;
+            const val = document.getElementById('glu-val').value;
+            if(!val) return;
+            let status = "正常", color = "text-green-500", bColor = "border-green-200";
+            if(time === 'fasting' && val >= 95) { status = "超標"; color = "text-red-500"; bColor = "border-red-200"; }
+            if(time === 'after2h' && val >= 120) { status = "超標"; color = "text-red-500"; bColor = "border-red-200"; }
+            
+            glucoses.unshift({ id: Date.now(), time: (time==='fasting'?'空腹':'飯後2h'), val, status, color, bColor, date: new Date().toLocaleDateString() });
+            localStorage.setItem('p_g', JSON.stringify(glucoses));
+            renderGlu();
+        }
+
+        function delG(id) {
+            glucoses = glucoses.filter(x => x.id !== id);
+            localStorage.setItem('p_g', JSON.stringify(glucoses));
+            renderGlu();
+        }
+
+        function renderGlu() {
+            const list = document.getElementById('glu-list');
+            list.innerHTML = glucoses.map(x => `
+                <div class="card p-3 flex justify-between items-center border-l-4 ${x.color === 'text-red-500' ? 'border-red-500':'border-green-500'}">
+                    <div><span class="text-xs text-gray-400">${x.date} ${x.time}</span><p class="font-bold">${x.val} mg/dL</p></div>
+                    <div class="flex items-center gap-3"><span class="${x.color} font-bold">${x.status}</span><button onclick="delG(${x.id})">🗑️</button></div>
+                </div>
+            `).join('');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('weightChart');
+            if(chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: weights.map(x => 'W'+x.week),
+                    datasets: [{ label: '體重 (kg)', data: weights.map(x => x.val), borderColor: '#f472b6', tension: 0.3, fill: false }]
+                },
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
+            });
+        }
+
+        function exportData() {
+            let csv = "\ufeff日期,類型,週數/時段,數值,狀態\n";
+            weights.forEach(x => csv += `${x.date},體重,第${x.week}週,${x.val}kg,-\n`);
+            glucoses.forEach(x => csv += `${x.date},血糖,${x.time},${x.val}mg/dL,${x.status}\n`);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = '孕期健康報表.csv'; a.click();
+        }
+
+        function clearData() { if(confirm("確定清空？")) { localStorage.clear(); location.reload(); } }
+
+        renderProfile(); renderWeight(); renderGlu(); initChart();
+    </script>
+</body>
+</html>
