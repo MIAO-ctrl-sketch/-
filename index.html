@@ -20,7 +20,7 @@
     <div class="max-w-md mx-auto p-4">
         <header class="text-center py-6">
             <h1 class="text-2xl font-bold text-pink-600">孕期健康助手</h1>
-            <div class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">GitHub Pages 極速儲存版</div>
+            <div class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">無網本地存儲版 v2.0</div>
         </header>
 
         <!-- 分頁切換 -->
@@ -92,14 +92,15 @@
         <div id="page-data" class="hidden">
             <div class="card p-6 text-center space-y-4">
                 <div class="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
-                    <h3 class="font-bold text-gray-600 text-sm mb-2">GitHub 本地存儲模式</h3>
+                    <h3 class="font-bold text-gray-600 text-sm mb-2">隱私與存儲說明</h3>
                     <p class="text-[10px] text-gray-400">
-                        您的資料儲存在此瀏覽器中。<br>
-                        更換手機前請務必點擊下方「匯出 CSV」。
+                        這是一個離線應用程式。<br>
+                        您的所有健康數據僅儲存於此瀏覽器的本地空間。<br>
+                        刪除瀏覽器資料或更換設備會導致數據遺失。
                     </p>
                 </div>
                 <button onclick="exportData()" class="w-full btn-pink py-3 font-bold text-sm shadow-sm">匯出 CSV 報表</button>
-                <button onclick="clearData()" class="w-full border border-red-200 text-red-400 rounded py-2 text-xs hover:bg-red-50">清空本地資料</button>
+                <button onclick="clearData()" class="w-full border border-red-200 text-red-400 rounded py-2 text-xs hover:bg-red-50">清空本地所有紀錄</button>
             </div>
         </div>
     </div>
@@ -117,9 +118,9 @@
          * 啟動 App 的核心函數
          */
         function startApp() {
-            console.log("App Starting...");
-            // 1. 從本地讀取資料
-            const saved = localStorage.getItem('preg_data_local');
+            console.log("App Starting (v2.0 Pure Local Mode)...");
+            // 1. 從本地讀取資料 (使用新 Key 避開舊快取)
+            const saved = localStorage.getItem('preg_tracker_v2');
             if (saved) {
                 try {
                     userData = JSON.parse(saved);
@@ -140,7 +141,7 @@
 
         // 儲存至本地並更新 UI
         function saveToLocal() {
-            localStorage.setItem('preg_data_local', JSON.stringify(userData));
+            localStorage.setItem('preg_tracker_v2', JSON.stringify(userData));
             renderUI();
         }
 
