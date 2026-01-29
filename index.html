@@ -21,15 +21,9 @@
     </style>
 </head>
 <body class="pb-10">
-    <!-- 讀取遮罩 -->
     <div id="loading" class="loading-overlay">
         <div class="loader mb-4"></div>
         <div class="text-pink-600 font-bold">雲端資料同步中...</div>
-    </div>
-
-    <div id="install-hint" class="hidden bg-pink-600 text-white text-[10px] py-2 px-4 flex justify-between items-center">
-        <span>💡 點擊「分享」選擇「加入主畫面」，記錄更方便！</span>
-        <button onclick="this.parentElement.remove()">✕</button>
     </div>
 
     <div class="max-w-md mx-auto p-4">
@@ -38,7 +32,6 @@
             <div id="user-info" class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">Initialising...</div>
         </header>
 
-        <!-- 選單 -->
         <div class="flex border-b border-gray-200 mb-6 text-center text-sm">
             <button onclick="showPage('bmi')" id="btn-bmi" class="flex-1 py-2 tab-active">體重曲線</button>
             <button onclick="showPage('glu')" id="btn-glu" class="flex-1 py-2 text-gray-400">血糖紀錄</button>
@@ -94,7 +87,6 @@
             <div class="card p-6 text-center space-y-4">
                 <h3 class="font-bold text-gray-700 text-sm">裝置專屬 ID</h3>
                 <div class="p-4 bg-gray-50 rounded text-left border border-dashed border-gray-300">
-                    <p class="text-[10px] text-gray-500 mb-1">若更換手機，可憑此 ID 找回資料：</p>
                     <div id="full-user-id" class="text-[10px] font-mono break-all text-pink-600 bg-white p-2 border rounded select-all">Loading...</div>
                 </div>
                 <button onclick="exportData()" class="w-full btn-pink py-3 font-bold text-sm">匯出 CSV 報表</button>
@@ -108,7 +100,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase 環境設定 (由環境提供)
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -119,11 +110,8 @@
         let userData = { profile: null, weights: [], glucoses: [] };
         let chart = null;
 
-        // 匿名登入邏輯
         async function startApp() {
-            try {
-                await signInAnonymously(auth);
-            } catch (e) { console.error("Auth failed", e); }
+            try { await signInAnonymously(auth); } catch (e) { console.error("Auth failed", e); }
         }
 
         onAuthStateChanged(auth, (u) => {
@@ -135,26 +123,42 @@
             }
         });
 
-        // 雲端即時同步 (Rule 1, 2, 3)
         function syncData() {
             const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main');
             onSnapshot(docRef, (snap) => {
-                if (snap.exists()) {
-                    userData = snap.data();
-                } else {
-                    setDoc(docRef, { profile: null, weights: [], glucoses: [] });
-                }
+                if (snap.exists()) { userData = snap.data(); }
+                else { setDoc(docRef, { profile: null, weights: [], glucoses: [] }); }
                 renderUI();
                 document.getElementById('loading').classList.add('hidden');
-            }, (err) => {
-                console.error("Sync error", err);
-                document.getElementById('loading').classList.add('hidden');
-            });
+            }, (err) => { document.getElementById('loading').classList.add('hidden'); });
         }
 
-        // 渲染 UI
+        // 衛福部體重警告邏輯
+        function getWeightAlert(currentW, week) {
+            if (!userData.profile || !userData.profile.w) return null;
+            const startW = userData.profile.w;
+            const diff = currentW - startW;
+            
+            // 總增重提醒 (適用於後期或整體)
+            const totalAdvice = "建議體重增加 10~14 公斤較恰當。";
+
+            if (week <= 12) {
+                if (diff > 2) return { color: 'text-red-500', msg: `⚠️ 初期增重已達 ${diff}kg (標準1~2kg)，請注意飲食控制。` };
+                if (diff <= 0) return { color: 'text-yellow-600', msg: `💡 體重增長較慢，經醫生檢查後若胎兒發展正常不需過於擔心。` };
+            } else if (week <= 28) {
+                // 中期標準: 總增重 1~2(初期) + 5~6(中期) = 約 6-8kg
+                // 每週建議 0.4-0.5
+                if (diff > 9) return { color: 'text-red-500', msg: `⚠️ 中期增重過快，請諮詢營養師建議。` };
+                if (diff < 3) return { color: 'text-yellow-600', msg: `💡 中期體重增加較少，經醫生檢查後若胎兒發展正常不需過於擔心。` };
+            } else {
+                // 後期標準
+                if (diff > 15) return { color: 'text-red-500', msg: `⚠️ 總增重已超過衛福部建議標準(14kg)，請注意血壓與血糖。` };
+                if (diff < 8) return { color: 'text-yellow-600', msg: `💡 後期體重增長較緩，經醫生檢查後若胎兒發展正常不需過於擔心。` };
+            }
+            return null;
+        }
+
         window.renderUI = () => {
-            // Profile
             if(userData.profile) {
                 const p = userData.profile;
                 const res = document.getElementById('bmi-result');
@@ -164,17 +168,20 @@
                 document.getElementById('w').value = p.w;
             }
 
-            // Weights
             const wList = document.getElementById('weight-list');
             const sortedW = [...(userData.weights || [])].sort((a,b) => b.week - a.week);
-            wList.innerHTML = sortedW.map(x => `
-                <div class="flex justify-between bg-white p-2 border-b items-center">
-                    <span>第 ${x.week} 週: <strong>${x.val} kg</strong></span>
-                    <button onclick="delWeight(${x.id})" class="text-red-300">✕</button>
+            wList.innerHTML = sortedW.map(x => {
+                const alert = getWeightAlert(x.val, x.week);
+                return `
+                <div class="bg-white p-3 border-b space-y-1">
+                    <div class="flex justify-between items-center">
+                        <span>第 ${x.week} 週: <strong>${x.val} kg</strong></span>
+                        <button onclick="delWeight(${x.id})" class="text-red-300">✕</button>
+                    </div>
+                    ${alert ? `<p class="${alert.color} font-bold animate-pulse" style="font-size: 10px;">${alert.msg}</p>` : ''}
                 </div>
-            `).join('');
+            `}).join('');
 
-            // Glucoses
             const gList = document.getElementById('glu-list');
             gList.innerHTML = (userData.glucoses || []).map(x => `
                 <div class="card p-3 flex justify-between items-center border-l-4 ${x.isOver ? 'border-red-500 bg-red-50 alert-pulse' : 'border-green-500'}">
@@ -191,11 +198,9 @@
                     </div>
                 </div>
             `).join('');
-
             updateChart();
         };
 
-        // 操作功能
         window.showPage = (p) => {
             ['bmi','glu','data'].forEach(x => {
                 document.getElementById('page-'+x).classList.add('hidden');
@@ -204,17 +209,12 @@
             });
             document.getElementById('page-'+p).classList.remove('hidden');
             document.getElementById('btn-'+p).classList.add('tab-active');
-            if(p === 'glu') {
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                document.getElementById('glu-datetime').value = now.toISOString().slice(0, 16);
-            }
         };
 
         window.saveProfile = async () => {
             const h = parseFloat(document.getElementById('h').value) / 100;
             const w = parseFloat(document.getElementById('w').value);
-            if(!h || !w) return alert("請填寫身高體重");
+            if(!h || !w) return;
             const bmi = (w / (h * h)).toFixed(1);
             let advice = bmi < 18.5 ? "建議增重 12.5-18kg" : (bmi < 25 ? "建議增重 11.5-16kg" : "建議增重 7-11.5kg");
             await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main'), { profile: { h, w, bmi, advice } });
@@ -238,19 +238,9 @@
             const val = parseFloat(document.getElementById('glu-val').value);
             const type = document.getElementById('glu-time').value;
             if(!val || !dt) return;
-
             const isOver = (type === 'fasting' && val >= 95) || (type === 'after2h' && val >= 120);
-            const newItem = {
-                id: Date.now(),
-                date: dt.replace('T', ' '),
-                val,
-                type: type === 'fasting' ? '空腹' : '飯後2h',
-                isOver,
-                status: isOver ? '⚠️ 偏高' : '正常'
-            };
-            const glucoses = [newItem, ...(userData.glucoses || [])];
+            const glucoses = [{ id: Date.now(), date: dt.replace('T', ' '), val, type: type === 'fasting' ? '空腹' : '飯後2h', isOver, status: isOver ? '⚠️ 偏高' : '正常' }, ...(userData.glucoses || [])];
             await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main'), { glucoses });
-            document.getElementById('glu-val').value = '';
         };
 
         window.delGlu = async (id) => {
@@ -278,8 +268,7 @@
             (userData.glucoses || []).forEach(x => csv += `${x.date},血糖,${x.type},${x.val}mg/dL,${x.status}\n`);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = '孕期雲端數據報表.csv'; a.click();
+            const a = document.createElement('a'); a.href = url; a.download = '孕期數據報表.csv'; a.click();
         };
 
         window.clearData = async () => {
