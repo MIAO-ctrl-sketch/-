@@ -3,38 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>孕期健康助手 - 雲端同步版</title>
+    <title>孕期健康助手 - 極速版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #fef2f2; color: #4b5563; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #fef2f2; color: #4b5563; -webkit-tap-highlight-color: transparent; }
         .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #fee2e2; }
         .btn-pink { background: #f472b6; color: white; border-radius: 0.5rem; transition: all 0.2s; }
         .btn-pink:hover { background: #ec4899; }
         .tab-active { border-bottom: 3px solid #f472b6; color: #f472b6; font-weight: bold; }
-        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #f472b6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        input:focus { outline: 2px solid #f472b6; border-color: transparent; }
     </style>
 </head>
 <body class="pb-10">
-    <div id="loading" class="loading-overlay">
-        <div class="loader mb-4"></div>
-        <div id="loading-text" class="text-pink-600 font-bold">雲端資料同步中...</div>
-        <button onclick="document.getElementById('loading').remove()" class="mt-4 text-[10px] text-gray-400 underline">強制跳過讀取</button>
-    </div>
-
     <div class="max-w-md mx-auto p-4">
         <header class="text-center py-6">
             <h1 class="text-2xl font-bold text-pink-600">孕期健康助手</h1>
-            <div id="user-info" class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">Initialising...</div>
+            <div class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">GitHub Pages 極速儲存版</div>
         </header>
 
+        <!-- 分頁切換 -->
         <div class="flex border-b border-gray-200 mb-6 text-center text-sm">
             <button onclick="showPage('bmi')" id="btn-bmi" class="flex-1 py-2 tab-active">體重曲線</button>
             <button onclick="showPage('glu')" id="btn-glu" class="flex-1 py-2 text-gray-400">血糖紀錄</button>
-            <button onclick="showPage('data')" id="btn-data" class="flex-1 py-2 text-gray-400">備份管理</button>
+            <button onclick="showPage('data')" id="btn-data" class="flex-1 py-2 text-gray-400">管理備份</button>
         </div>
 
         <!-- 體重分頁 -->
@@ -42,21 +35,35 @@
             <div class="card p-4">
                 <h3 class="font-bold text-pink-600 mb-3 underline">1. 孕前基本設定</h3>
                 <div class="grid grid-cols-2 gap-3 mb-3">
-                    <input type="number" id="h" placeholder="身高 cm" class="border rounded p-2 text-sm">
-                    <input type="number" id="w" placeholder="孕前體重 kg" class="border rounded p-2 text-sm">
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-400 ml-1">身高 (cm)</label>
+                        <input type="number" id="h" placeholder="例如: 160" class="w-full border rounded p-2 text-sm">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-400 ml-1">孕前體重 (kg)</label>
+                        <input type="number" id="w" placeholder="例如: 50" class="w-full border rounded p-2 text-sm">
+                    </div>
                 </div>
-                <button onclick="saveProfile()" class="w-full btn-pink py-2 text-sm font-bold">儲存雲端設定</button>
-                <div id="bmi-result" class="hidden mt-3 p-3 bg-pink-50 rounded text-xs text-pink-800 border border-pink-100"></div>
+                <button onclick="saveProfile()" class="w-full btn-pink py-2 text-sm font-bold shadow-sm">儲存設定</button>
+                <div id="bmi-result" class="hidden mt-3 p-3 bg-pink-50 rounded text-xs text-pink-800 border border-pink-100 leading-relaxed"></div>
             </div>
 
             <div class="card p-4">
                 <h3 class="font-bold text-gray-700 mb-3 text-sm">2. 每週體重紀錄</h3>
-                <div class="flex gap-2 mb-4">
-                    <input type="number" id="week" placeholder="週數" class="w-20 border rounded p-2 text-sm">
-                    <input type="number" id="now-w" placeholder="目前 kg" class="flex-1 border rounded p-2 text-sm">
-                    <button onclick="addWeight()" class="btn-pink px-4 text-sm font-bold">紀錄</button>
+                <div class="flex gap-2 mb-4 items-end">
+                    <div class="w-20 space-y-1">
+                        <label class="text-[10px] text-gray-400 ml-1">週數</label>
+                        <input type="number" id="week" class="w-full border rounded p-2 text-sm">
+                    </div>
+                    <div class="flex-1 space-y-1">
+                        <label class="text-[10px] text-gray-400 ml-1">目前體重 (kg)</label>
+                        <input type="number" id="now-w" step="0.1" class="w-full border rounded p-2 text-sm">
+                    </div>
+                    <button onclick="addWeight()" class="btn-pink h-[38px] px-4 text-sm font-bold shadow-sm">紀錄</button>
                 </div>
-                <canvas id="weightChart" class="mb-4"></canvas>
+                <div class="h-48 mb-4">
+                    <canvas id="weightChart"></canvas>
+                </div>
                 <div id="weight-list" class="space-y-2 text-xs"></div>
             </div>
         </div>
@@ -64,140 +71,98 @@
         <!-- 血糖分頁 -->
         <div id="page-glu" class="hidden space-y-4">
             <div class="card p-4">
-                <h3 class="font-bold text-gray-700 mb-3 text-sm">血糖即時紀錄</h3>
+                <h3 class="font-bold text-gray-700 mb-3 text-sm">血糖紀錄</h3>
                 <div class="space-y-3 text-sm">
-                    <input type="datetime-local" id="glu-datetime" class="w-full border rounded p-2">
-                    <select id="glu-time" class="w-full border rounded p-2">
+                    <div class="space-y-1">
+                        <label class="text-[10px] text-gray-400 ml-1">時間點</label>
+                        <input type="datetime-local" id="glu-datetime" class="w-full border rounded p-2">
+                    </div>
+                    <select id="glu-time" class="w-full border rounded p-2 bg-white">
                         <option value="fasting">晨起空腹 (標準 < 95)</option>
                         <option value="after2h">飯後 2 小時 (標準 < 120)</option>
                     </select>
                     <input type="number" id="glu-val" placeholder="血糖值 mg/dL" class="w-full border rounded p-2">
-                    <button onclick="addGlu()" class="w-full btn-pink py-2 font-bold">儲存雲端紀錄</button>
+                    <button onclick="addGlu()" class="w-full btn-pink py-2 font-bold shadow-sm">新增紀錄</button>
                 </div>
             </div>
             <div id="glu-list" class="space-y-2"></div>
         </div>
 
-        <!-- 備份分頁 -->
+        <!-- 管理分頁 -->
         <div id="page-data" class="hidden">
             <div class="card p-6 text-center space-y-4">
-                <h3 class="font-bold text-gray-700 text-sm">裝置專屬 ID</h3>
-                <div id="full-user-id" class="text-[10px] font-mono break-all text-pink-600 bg-gray-50 p-2 border rounded">Loading...</div>
-                <button onclick="exportData()" class="w-full btn-pink py-3 font-bold text-sm">匯出 CSV 報表</button>
-                <button onclick="clearData()" class="w-full border border-gray-300 rounded py-2 text-[10px] text-gray-400">清空所有紀錄</button>
+                <div class="bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
+                    <h3 class="font-bold text-gray-600 text-sm mb-2">GitHub 本地存儲模式</h3>
+                    <p class="text-[10px] text-gray-400">
+                        您的資料儲存在此瀏覽器中。<br>
+                        更換手機前請務必點擊下方「匯出 CSV」。
+                    </p>
+                </div>
+                <button onclick="exportData()" class="w-full btn-pink py-3 font-bold text-sm shadow-sm">匯出 CSV 報表</button>
+                <button onclick="clearData()" class="w-full border border-red-200 text-red-400 rounded py-2 text-xs hover:bg-red-50">清空本地資料</button>
             </div>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pregnancy-cloud-v1';
-
-        let user = null;
-        let userData = { profile: null, weights: [], glucoses: [] };
+    <script>
+        // 資料與變數定義
+        let userData = {
+            profile: null,
+            weights: [],
+            glucoses: []
+        };
         let chart = null;
 
-        async function startApp() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (e) { 
-                console.error("Auth Error", e);
-                hideLoading(); 
-            }
-        }
-
-        function hideLoading() {
-            const el = document.getElementById('loading');
-            if (el) el.remove();
-        }
-
-        onAuthStateChanged(auth, async (u) => {
-            if (u) {
-                user = u;
-                document.getElementById('user-info').innerText = `Sync: ${u.uid.substring(0,8)}`;
-                document.getElementById('full-user-id').innerText = u.uid;
-                
-                // 強制檢查與初始化資料，避免 onSnapshot 卡住
-                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main');
+        /**
+         * 啟動 App 的核心函數
+         */
+        function startApp() {
+            console.log("App Starting...");
+            // 1. 從本地讀取資料
+            const saved = localStorage.getItem('preg_data_local');
+            if (saved) {
                 try {
-                    const snap = await getDoc(docRef);
-                    if (!snap.exists()) {
-                        await setDoc(docRef, { profile: null, weights: [], glucoses: [] });
-                    }
+                    userData = JSON.parse(saved);
                 } catch (e) {
-                    console.error("Init Doc Error", e);
+                    console.error("Data parse error", e);
                 }
-                
-                syncData();
             }
-        });
-
-        function syncData() {
-            if (!user) return;
-            const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main');
             
-            // 安全機制：5秒後若還沒載入就報錯並讓使用者進入
-            const safetyTimeout = setTimeout(() => {
-                const text = document.getElementById('loading-text');
-                if (text) text.innerText = "同步緩慢，正嘗試直接進入...";
-                setTimeout(hideLoading, 2000);
-            }, 5000);
-
-            onSnapshot(docRef, (snap) => {
-                clearTimeout(safetyTimeout);
-                if (snap.exists()) { 
-                    userData = snap.data(); 
-                }
-                renderUI();
-                hideLoading();
-            }, (err) => {
-                console.error("Sync Error", err);
-                hideLoading();
-            });
+            // 2. 初始化時間選擇器
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            const dtInput = document.getElementById('glu-datetime');
+            if (dtInput) dtInput.value = now.toISOString().slice(0, 16);
+            
+            // 3. 渲染畫面
+            renderUI();
         }
 
+        // 儲存至本地並更新 UI
+        function saveToLocal() {
+            localStorage.setItem('preg_data_local', JSON.stringify(userData));
+            renderUI();
+        }
+
+        // 體重增長警示邏輯
         function getWeightAlert(currentW, week) {
             if (!userData.profile || !userData.profile.w) return null;
             const startW = userData.profile.w;
             const totalDiff = currentW - startW;
 
-            const sortedWeights = [...(userData.weights || [])].sort((a,b) => a.week - b.week);
-            const prevEntry = sortedWeights.filter(x => x.week < week).pop();
-            const weeklyDiff = prevEntry ? (currentW - prevEntry.val) / (week - prevEntry.week) : 0;
-            
             if (week <= 12) {
-                if (totalDiff > 2) return { color: 'text-red-500', msg: '⚠️ 懷孕初期增重應控制在 1-2kg 內，避免進度過快以降低孕期風險。' };
-                if (totalDiff <= 0) return { color: 'text-yellow-600', msg: '增重較慢，若醫師確認胎兒發展正常，請保持放鬆並規律進食。' };
+                if (totalDiff > 2) return { color: 'text-red-500', msg: '⚠️ 初期增重過快 (建議1~2kg)。' };
             } else if (week <= 28) {
-                const maxTotalMid = 2 + (week - 12) * 0.5;
-                const isWeeklyFast = prevEntry && weeklyDiff > 0.5;
-                const isTotalFast = totalDiff > maxTotalMid + 1;
-
-                if (isWeeklyFast || isTotalFast) return { color: 'text-red-500', msg: '⚠️ 本週增重超過建議值（0.5kg），請留意飲食均衡並諮詢專業建議。' };
-                if (totalDiff < (week - 12) * 0.2) return { color: 'text-yellow-600', msg: '增重較慢，若醫師確認胎兒發展正常，請保持放鬆並規律進食。' };
+                const maxMid = 2 + (week - 12) * 0.5;
+                if (totalDiff > maxMid + 1.5) return { color: 'text-red-500', msg: '⚠️ 中期增重較快，請留意體重管理。' };
             } else {
-                const maxTotalLate = 10 + (week - 28) * 0.5;
-                const isWeeklyFast = prevEntry && weeklyDiff > 0.6;
-                const isTotalFast = totalDiff > maxTotalLate + 1.5;
-
-                if (isWeeklyFast || isTotalFast) return { color: 'text-red-500', msg: '⚠️ 本週增重超過建議值（0.5kg），請留意飲食均衡並諮詢專業建議。' };
-                if (totalDiff < 8) return { color: 'text-yellow-600', msg: '增重較慢，若醫師確認胎兒發展正常，請保持放鬆並規律進食。' };
+                if (totalDiff > 14) return { color: 'text-red-500', msg: '⚠️ 後期總增重較多，建議諮詢醫師。' };
             }
             return null;
         }
 
-        window.renderUI = () => {
+        function renderUI() {
+            // 渲染 Profile
             if(userData.profile) {
                 const p = userData.profile;
                 const res = document.getElementById('bmi-result');
@@ -207,29 +172,39 @@
                 document.getElementById('w').value = p.w;
             }
 
+            // 渲染體重列表
             const wList = document.getElementById('weight-list');
             const sortedW = [...(userData.weights || [])].sort((a,b) => b.week - a.week);
             wList.innerHTML = sortedW.map(x => {
                 const alert = getWeightAlert(x.val, x.week);
                 return `
-                <div class="bg-white p-3 border-b">
+                <div class="bg-white p-3 border-b flex flex-col">
                     <div class="flex justify-between items-center">
-                        <span>第 ${x.week} 週: <strong>${x.val} kg</strong></span>
-                        <button onclick="delWeight(${x.id})" class="text-red-300">✕</button>
+                        <span>第 <b class="text-pink-600">${x.week}</b> 週: <strong>${x.val} kg</strong></span>
+                        <button onclick="delWeight(${x.id})" class="text-gray-300 hover:text-red-400">✕</button>
                     </div>
                     ${alert ? `<p class="${alert.color} font-bold mt-1" style="font-size: 11px;">${alert.msg}</p>` : ''}
                 </div>`
             }).join('');
 
+            // 渲染血糖列表
             const gList = document.getElementById('glu-list');
             gList.innerHTML = (userData.glucoses || []).map(x => `
                 <div class="card p-3 flex justify-between items-center border-l-4 ${x.isOver ? 'border-red-500' : 'border-green-500'} mb-2 text-xs">
-                    <div><span class="text-gray-400">${x.date}</span><br><strong>${x.type}: ${x.val} mg/dL</strong></div>
-                    <div class="flex items-center gap-2"><span>${x.status}</span><button onclick="delGlu(${x.id})" class="text-gray-300">✕</button></div>
+                    <div>
+                        <span class="text-gray-400">${x.date}</span><br>
+                        <strong>${x.type}: <span class="${x.isOver ? 'text-red-600' : ''}">${x.val} mg/dL</span></strong>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="${x.isOver ? 'text-red-500 font-bold' : 'text-green-600'}">${x.status}</span>
+                        <button onclick="delGlu(${x.id})" class="text-gray-300">✕</button>
+                    </div>
                 </div>`).join('');
-            updateChart();
-        };
 
+            updateChart();
+        }
+
+        // 分頁控制
         window.showPage = (p) => {
             ['bmi','glu','data'].forEach(x => {
                 document.getElementById('page-'+x).classList.add('hidden');
@@ -239,76 +214,87 @@
             document.getElementById('btn-'+p).className = 'flex-1 py-2 tab-active';
         };
 
-        window.saveProfile = async () => {
-            const h = parseFloat(document.getElementById('h').value) / 100;
-            const w = parseFloat(document.getElementById('w').value);
-            if(!h || !w) return;
+        // 資料處理函數
+        window.saveProfile = () => {
+            const hVal = document.getElementById('h').value;
+            const wVal = document.getElementById('w').value;
+            if(!hVal || !wVal) return alert("請輸入完整身高體重");
+            const h = parseFloat(hVal) / 100;
+            const w = parseFloat(wVal);
             const bmi = (w / (h * h)).toFixed(1);
-            let advice = "建議體重增加10～14公斤較恰當，初期只需增加1～2公斤，中期約增加5～6公斤，每週建議增加約0.4-0.5公斤，後期平均增加4～6公斤，每週增加約0.5公斤。";
-            await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main'), { profile: { h, w, bmi, advice } });
+            let advice = "建議總增重10～14公斤較恰當。初期增1～2kg，中後期每週約增0.5kg。";
+            userData.profile = { h, w, bmi, advice };
+            saveToLocal();
         };
 
-        window.addWeight = async () => {
+        window.addWeight = () => {
             const week = parseInt(document.getElementById('week').value);
             const val = parseFloat(document.getElementById('now-w').value);
-            if(!week || !val) return;
-            const weights = [...(userData.weights || []), { id: Date.now(), week, val }];
-            await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main'), { weights });
-            document.getElementById('week').value = ''; document.getElementById('now-w').value = '';
+            if(isNaN(week) || isNaN(val)) return alert("請輸入週數與體重");
+            const idx = userData.weights.findIndex(x => x.week === week);
+            if(idx !== -1 && !confirm(`第 ${week} 週已有紀錄，要覆蓋嗎？`)) return;
+            if(idx !== -1) userData.weights.splice(idx, 1);
+            userData.weights.push({ id: Date.now(), week, val });
+            document.getElementById('now-w').value = '';
+            saveToLocal();
         };
 
-        window.delWeight = async (id) => {
-            const weights = userData.weights.filter(x => x.id !== id);
-            await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main'), { weights });
+        window.delWeight = (id) => {
+            userData.weights = userData.weights.filter(x => x.id !== id);
+            saveToLocal();
         };
 
-        window.addGlu = async () => {
+        window.addGlu = () => {
             const dt = document.getElementById('glu-datetime').value;
             const val = parseFloat(document.getElementById('glu-val').value);
             const type = document.getElementById('glu-time').value;
-            if(!val || !dt) return;
+            if(!val || !dt) return alert("請輸入完整血糖資訊");
             const isOver = (type === 'fasting' && val >= 95) || (type === 'after2h' && val >= 120);
-            const glucoses = [{ id: Date.now(), date: dt.replace('T', ' '), val, type: type === 'fasting' ? '空腹' : '飯後2h', isOver, status: isOver ? '⚠️ 偏高' : '正常' }, ...(userData.glucoses || [])];
-            await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main'), { glucoses });
+            userData.glucoses.unshift({ 
+                id: Date.now(), date: dt.replace('T', ' '), val, type: type === 'fasting' ? '空腹' : '飯後2h', isOver, status: isOver ? '⚠️ 偏高' : '正常' 
+            });
             document.getElementById('glu-val').value = '';
+            saveToLocal();
         };
 
-        window.delGlu = async (id) => {
-            const glucoses = userData.glucoses.filter(x => x.id !== id);
-            await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main'), { glucoses });
+        window.delGlu = (id) => {
+            userData.glucoses = userData.glucoses.filter(x => x.id !== id);
+            saveToLocal();
         };
 
         function updateChart() {
             const ctx = document.getElementById('weightChart');
-            if (!ctx) return;
+            if(!ctx) return;
             if(chart) chart.destroy();
             const data = [...(userData.weights || [])].sort((a,b) => a.week - b.week);
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.map(x => 'W'+x.week),
-                    datasets: [{ data: data.map(x => x.val), borderColor: '#f472b6', tension: 0.3 }]
+                    datasets: [{ 
+                        label: '體重', data: data.map(x => x.val), borderColor: '#f472b6', backgroundColor: 'rgba(244, 114, 182, 0.1)', fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#f472b6'
+                    }]
                 },
-                options: { plugins: { legend: { display: false } } }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
             });
         }
 
         window.exportData = () => {
             let csv = "\ufeff日期,類型,詳情,數值,狀態\n";
-            (userData.weights || []).forEach(x => csv += `-,體重,第${x.week}週,${x.val}kg,-\n`);
-            (userData.glucoses || []).forEach(x => csv += `${x.date},血糖,${x.type},${x.val}mg/dL,${x.status}\n`);
+            [...(userData.weights || [])].sort((a,b) => a.week - b.week).forEach(x => csv += `-,體重紀錄,第${x.week}週,${x.val}kg,-\n`);
+            (userData.glucoses || []).forEach(x => csv += `${x.date},血糖紀錄,${x.type},${x.val}mg/dL,${x.status}\n`);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = '數據報表.csv'; a.click();
+            const a = document.createElement('a');
+            a.href = url; a.download = `孕期紀錄_${new Date().toLocaleDateString()}.csv`; a.click();
         };
 
-        window.clearData = async () => {
-            if(confirm("確定刪除雲端所有紀錄？")) {
-                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'health', 'main'), { profile: null, weights: [], glucoses: [] });
-            }
+        window.clearData = () => {
+            if(confirm("確定永久刪除所有紀錄嗎？")) { localStorage.clear(); location.reload(); }
         };
 
-        startApp();
+        // 監聽 DOM 讀取完畢後啟動
+        window.addEventListener('DOMContentLoaded', startApp);
     </script>
 </body>
 </html>
