@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>幸孕檔案夾 - 醫學指引版 v4.2</title>
+    <title>幸孕檔案夾 - 醫學指引版 v4.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -19,15 +19,16 @@
         .reference-table th, .reference-table td { font-size: 10px; padding: 4px; border: 1px solid #fce7f3; text-align: center; }
         .delete-btn { color: #f87171; font-size: 12px; cursor: pointer; padding: 4px 10px; border: 1px solid #fecaca; border-radius: 6px; background: white; }
         .delete-btn:hover { background-color: #fef2f2; color: #ef4444; border-color: #fca5a5; }
-        /* 彈窗動畫 */
         .modal-overlay { background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); transition: all 0.3s; }
+        .time-link { text-decoration: underline; cursor: pointer; color: #6b7280; }
+        .time-link:hover { color: var(--pink-primary); }
     </style>
 </head>
 <body class="pb-20">
     <div class="max-w-md mx-auto p-4">
         <header class="text-center py-6">
             <h1 class="text-2xl font-bold text-pink-600">幸孕檔案夾</h1>
-            <p class="text-[10px] text-gray-400 mt-1 tracking-widest uppercase font-bold">Maternal Health Guide v4.2</p>
+            <p class="text-[10px] text-gray-400 mt-1 tracking-widest uppercase font-bold">Maternal Health Guide v4.4</p>
         </header>
 
         <!-- 導覽列 -->
@@ -113,29 +114,63 @@
 
         <!-- 3. 血壓血糖分頁 -->
         <section id="page-health" class="hidden space-y-4">
-            <div class="card p-4">
-                <h3 class="font-bold text-gray-700 mb-3 text-sm border-l-4 border-blue-400 pl-2">日常血壓紀錄</h3>
-                <div class="grid grid-cols-2 gap-2 mb-3">
-                    <input type="date" id="bp-date" class="col-span-2">
-                    <input type="number" id="bp-sys" placeholder="高壓">
-                    <input type="number" id="bp-dia" placeholder="低壓">
+            <!-- 血壓紀錄區 -->
+            <div class="card p-4 border-l-4 border-blue-400">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm">日常血壓紀錄</h3>
+                <div class="space-y-3 mb-3 text-sm">
+                    <div>
+                        <label>紀錄日期與時間</label>
+                        <input type="datetime-local" id="bp-dt">
+                    </div>
+                    <div>
+                        <label>分類</label>
+                        <select id="bp-type">
+                            <option value="morning">晨起量測</option>
+                            <option value="night">睡前量測</option>
+                            <option value="anytime">一般時段 / 隨時</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label>收縮壓(高壓)</label>
+                            <input type="number" id="bp-sys" placeholder="例如: 120">
+                        </div>
+                        <div>
+                            <label>舒張壓(低壓)</label>
+                            <input type="number" id="bp-dia" placeholder="例如: 80">
+                        </div>
+                    </div>
                 </div>
                 <button onclick="addBP()" class="w-full btn-pink py-2 bg-blue-500 hover:bg-blue-600">紀錄血壓</button>
-                <div id="bp-list" class="mt-4 space-y-2"></div>
             </div>
-            <div class="card p-4">
-                <h3 class="font-bold text-gray-700 mb-3 text-sm border-l-4 border-green-400 pl-2">日常血糖紀錄</h3>
-                <div class="space-y-2 mb-3">
-                    <input type="datetime-local" id="glu-dt">
-                    <select id="glu-type">
-                        <option value="fasting">晨起空腹 (標準 60~95)</option>
-                        <option value="after2h">飯後2小時 (標準 60~120)</option>
-                    </select>
+
+            <!-- 血糖紀錄區 -->
+            <div class="card p-4 border-l-4 border-green-400">
+                <h3 class="font-bold text-gray-700 mb-3 text-sm">日常血糖紀錄</h3>
+                <div class="space-y-3 mb-3 text-sm">
+                    <div>
+                        <label>紀錄日期與時間</label>
+                        <input type="datetime-local" id="glu-dt">
+                    </div>
+                    <div>
+                        <label>分類</label>
+                        <select id="glu-type">
+                            <option value="fasting">晨起空腹 (標準 60~95)</option>
+                            <option value="after2h">飯後2小時 (標準 60~120)</option>
+                            <option value="other">其他時段</option>
+                        </select>
+                    </div>
                     <input type="number" id="glu-val" placeholder="血糖值 mg/dL">
                 </div>
                 <button onclick="addGlu()" class="w-full btn-pink py-2 bg-green-500 hover:bg-green-600">紀錄血糖</button>
-                <div id="glu-list" class="mt-4 space-y-2"></div>
             </div>
+
+            <div class="px-1 text-[10px] text-gray-400 italic">
+                💡 備註：在網頁血糖血壓的地方按壓時間可修正時間
+            </div>
+            
+            <div id="bp-list" class="space-y-2"></div>
+            <div id="glu-list" class="space-y-2"></div>
         </section>
 
         <!-- 4. 管理與備份 -->
@@ -168,7 +203,7 @@
     <script>
         // --- 資料核心 ---
         let userData = { profile: null, weights: [], checkups: {}, bp: [], glu: [] };
-        let pendingDelete = null; // 用於存放待刪除的資料資訊
+        let pendingDelete = null; 
         let chart = null;
 
         const checkupTemplates = [
@@ -181,15 +216,10 @@
 
         // --- 初始化 & 儲存 ---
         function init() {
-            const saved = localStorage.getItem('preg_pro_v4_2');
+            const saved = localStorage.getItem('preg_pro_v4_final_storage');
             if(saved) userData = JSON.parse(saved);
 
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('bp-date').value = today;
-            document.getElementById('cu-date').value = today;
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('glu-dt').value = now.toISOString().slice(0, 16);
+            refreshTimeInputs();
 
             const select = document.getElementById('cu-index');
             select.innerHTML = checkupTemplates.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
@@ -198,8 +228,17 @@
             renderAll();
         }
 
+        function refreshTimeInputs() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            const currentDateTime = now.toISOString().slice(0, 16);
+            document.getElementById('bp-dt').value = currentDateTime;
+            document.getElementById('glu-dt').value = currentDateTime;
+            document.getElementById('cu-date').value = now.toISOString().split('T')[0];
+        }
+
         function save() {
-            localStorage.setItem('preg_pro_v4_2', JSON.stringify(userData));
+            localStorage.setItem('preg_pro_v4_final_storage', JSON.stringify(userData));
             renderAll();
         }
 
@@ -248,24 +287,56 @@
         window.addBP = () => {
             const sys = parseInt(document.getElementById('bp-sys').value);
             const dia = parseInt(document.getElementById('bp-dia').value);
-            const date = document.getElementById('bp-date').value;
+            const dt = document.getElementById('bp-dt').value.replace('T', ' ');
+            const type = document.getElementById('bp-type').value;
             if(!sys || !dia) return showToast("請填寫完整數值");
-            userData.bp.unshift({ id: Date.now(), sys, dia, date });
+            
+            // 檢查是否為重複時間，若是則覆蓋
+            userData.bp = userData.bp.filter(x => x.date !== dt);
+            
+            userData.bp.unshift({ id: Date.now(), sys, dia, date: dt, type });
             save();
             document.getElementById('bp-sys').value = '';
             document.getElementById('bp-dia').value = '';
-            showToast("血壓紀錄成功");
+            showToast("血壓紀錄已存檔");
         };
 
         window.addGlu = () => {
             const val = parseInt(document.getElementById('glu-val').value);
-            const date = document.getElementById('glu-dt').value.replace('T', ' ');
+            const dt = document.getElementById('glu-dt').value.replace('T', ' ');
             const type = document.getElementById('glu-type').value;
             if(!val) return showToast("請輸入血糖值");
-            userData.glu.unshift({ id: Date.now(), val, date, type });
+            
+            userData.glu = userData.glu.filter(x => x.date !== dt);
+
+            userData.glu.unshift({ id: Date.now(), val, date: dt, type });
             save();
             document.getElementById('glu-val').value = '';
-            showToast("血糖紀錄成功");
+            showToast("血糖紀錄已存檔");
+        };
+
+        // --- 修正功能的資料回填 ---
+        window.editRecord = (category, id) => {
+            if(category === 'bp') {
+                const item = userData.bp.find(x => x.id === id);
+                if(item) {
+                    document.getElementById('bp-dt').value = item.date.replace(' ', 'T');
+                    document.getElementById('bp-sys').value = item.sys;
+                    document.getElementById('bp-dia').value = item.dia;
+                    document.getElementById('bp-type').value = item.type;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    showToast("已帶回上方輸入框，修改後按紀錄即可覆蓋");
+                }
+            } else if(category === 'glu') {
+                const item = userData.glu.find(x => x.id === id);
+                if(item) {
+                    document.getElementById('glu-dt').value = item.date.replace(' ', 'T');
+                    document.getElementById('glu-val').value = item.val;
+                    document.getElementById('glu-type').value = item.type;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    showToast("已帶回上方輸入框，修改後按紀錄即可覆蓋");
+                }
+            }
         };
 
         // --- 產檢紀錄 ---
@@ -289,7 +360,7 @@
             showToast("產檢存檔完成");
         };
 
-        // --- 徹底刪除功能 (Modal 觸發) ---
+        // --- 徹底刪除功能 ---
         window.triggerDelete = (type, id) => {
             pendingDelete = { type, id };
             document.getElementById('confirmModal').classList.remove('hidden');
@@ -308,16 +379,14 @@
         window.executeDelete = () => {
             if(!pendingDelete) return;
             const { type, id } = pendingDelete;
-            
             if(type === 'weight') userData.weights = userData.weights.filter(x => x.id !== id);
             else if(type === 'bp') userData.bp = userData.bp.filter(x => x.id !== id);
             else if(type === 'glu') userData.glu = userData.glu.filter(x => x.id !== id);
             else if(type === 'checkup') delete userData.checkups[id];
             else if(type === 'CLEAR_ALL') { localStorage.clear(); location.reload(); return; }
-
             closeModal();
             save();
-            showToast("紀錄已刪除");
+            showToast("紀錄已徹底刪除");
         };
 
         // --- 畫面渲染與警示邏輯 ---
@@ -327,30 +396,14 @@
             return { text: "正常", color: "text-green-500" };
         }
 
+        const bpTypeMap = { morning: '晨起', night: '睡前', anytime: '一般' };
+        const gluTypeMap = { fasting: '空腹', after2h: '飯後2h', other: '其他' };
+
         function getGluStatus(val, type) {
             const limit = (type === 'fasting') ? 95 : 120;
             if (val >= limit) return { text: "⚠️ 偏高", color: "text-red-500" };
             if (val < 60) return { text: "⚠️ 偏低", color: "text-blue-500" };
             return { text: "正常", color: "text-green-500" };
-        }
-
-        function getWeightAlerts(record) {
-            const p = userData.profile;
-            if(!p) return [];
-            const alerts = [];
-            const totalAdd = record.val - p.w;
-
-            if(record.week <= 12) {
-                if(totalAdd < 0) alerts.push({ type: 'info', msg: "💡 初期因害喜體重減輕是正常的。" });
-                if(totalAdd > p.limit12) alerts.push({ type: 'danger', msg: `⚠️ 初期增重超過建議範圍 (${p.limit12}kg)。` });
-            } else {
-                const prev = userData.weights.filter(w => w.week < record.week).pop();
-                if(prev) {
-                    const speed = (record.val - prev.val) / (record.week - prev.week);
-                    if(speed > p.weeklyLimit + 0.1) alerts.push({ type: 'danger', msg: `⚠️ 增重過快 (${speed.toFixed(1)}kg/週)，請控制飲食。` });
-                }
-            }
-            return alerts;
         }
 
         function renderAll() {
@@ -361,17 +414,11 @@
             }
 
             // 體重列表
-            document.getElementById('weight-list').innerHTML = [...userData.weights].reverse().map(x => {
-                const alerts = getWeightAlerts(x);
-                const alertHtml = alerts.map(a => `<div class="${a.type==='danger'?'text-red-500':'text-blue-500'} font-bold mt-1">● ${a.msg}</div>`).join('');
-                return `
-                <div class="p-3 border rounded-lg bg-white shadow-sm flex flex-col">
-                    <div class="flex justify-between items-center">
-                        <div class="text-xs">W<b>${x.week}</b>: <strong class="text-pink-600 text-sm">${x.val} kg</strong><br><span class="text-gray-400">${x.date}</span></div>
-                        <button onclick="triggerDelete('weight', ${x.id})" class="delete-btn">刪除</button>
-                    </div>
-                    <div class="text-[10px]">${alertHtml}</div>
-                </div>`}).join('');
+            document.getElementById('weight-list').innerHTML = [...userData.weights].reverse().map(x => `
+                <div class="p-3 border rounded-lg bg-white shadow-sm flex justify-between items-center">
+                    <div class="text-xs">W<b>${x.week}</b>: <strong class="text-pink-600 text-sm">${x.val} kg</strong><br><span class="text-gray-400">${x.date}</span></div>
+                    <button onclick="triggerDelete('weight', ${x.id})" class="delete-btn">刪除</button>
+                </div>`).join('');
 
             // 產檢歷史
             const cuHistory = Object.keys(userData.checkups).map(k => ({ ...userData.checkups[k], k }));
@@ -384,20 +431,22 @@
                     <div class="grid grid-cols-2 gap-y-2 text-gray-500 border-t pt-2">
                         <div>日期: <span class="text-gray-700">${x.date}</span></div>
                         <div>體重: <span class="text-gray-700">${x.weight}kg</span></div>
-                        <div>血壓: <span class="text-gray-700 font-bold">${x.bp}</span></div>
-                        <div>心音: <span class="text-gray-700">${x.fhr}</span></div>
                         <div>尿糖: <span class="font-bold ${x.sugar==='+'?'text-amber-600':''}">${x.sugar}</span></div>
                         <div>蛋白: <span class="font-bold ${x.protein!=='-'?'text-amber-600':''}">${x.protein}</span></div>
                         <div>浮腫: <span class="font-bold ${x.edema!=='-'?'text-amber-600':''}">${x.edema}</span></div>
                         <div class="col-span-2">下次預約: <span class="text-amber-600 font-bold">${x.next || '尚未預約'}</span></div>
                     </div>
-                </div>`).join('') || '<div class="text-center text-gray-300 py-10 text-xs">尚無產檢存檔紀錄</div>';
+                </div>`).join('') || '<div class="text-center text-gray-300 py-10 text-xs font-bold">目前無產檢紀錄</div>';
 
             // 血壓列表
             document.getElementById('bp-list').innerHTML = userData.bp.map(x => {
                 const status = getBPStatus(x.sys, x.dia);
                 return `<div class="p-3 border rounded bg-white text-xs flex justify-between items-center shadow-sm">
-                    <div><b>${x.sys}/${x.dia}</b> <span class="text-[10px]">mmHg</span> <span class="${status.color} ml-1 font-bold">${status.text}</span><br><span class="text-gray-400">${x.date}</span></div>
+                    <div>
+                        <b>${x.sys}/${x.dia}</b> <span class="text-[9px]">mmHg</span> (${bpTypeMap[x.type] || '一般'}) 
+                        <span class="${status.color} ml-1 font-bold">${status.text}</span><br>
+                        <span onclick="editRecord('bp', ${x.id})" class="time-link">${x.date}</span>
+                    </div>
                     <button onclick="triggerDelete('bp', ${x.id})" class="delete-btn">刪除</button>
                 </div>`}).join('');
 
@@ -405,7 +454,11 @@
             document.getElementById('glu-list').innerHTML = userData.glu.map(x => {
                 const status = getGluStatus(x.val, x.type);
                 return `<div class="p-3 border rounded bg-white text-xs flex justify-between items-center shadow-sm">
-                    <div><b>${x.val}</b> <span class="text-[10px]">mg/dL</span> (${x.type==='fasting'?'空腹':'飯後'}) <span class="${status.color} ml-1 font-bold">${status.text}</span><br><span class="text-gray-400">${x.date}</span></div>
+                    <div>
+                        <b>${x.val}</b> <span class="text-[9px]">mg/dL</span> (${gluTypeMap[x.type] || '其他'}) 
+                        <span class="${status.color} ml-1 font-bold">${status.text}</span><br>
+                        <span onclick="editRecord('glu', ${x.id})" class="time-link">${x.date}</span>
+                    </div>
                     <button onclick="triggerDelete('glu', ${x.id})" class="delete-btn">刪除</button>
                 </div>`}).join('');
             
@@ -455,18 +508,13 @@
         }
 
         window.exportData = () => {
-            let csv = "\ufeff日期,項目,詳情,數值\n";
-            userData.weights.forEach(x => csv += `${x.date},體重紀錄,第${x.week}週,${x.val}kg\n`);
-            userData.bp.forEach(x => csv += `${x.date},血壓紀錄,${x.sys}/${x.dia}mmHg,-\n`);
-            userData.glu.forEach(x => csv += `${x.date},血糖紀錄,${x.val}mg/dL (${x.type}),-\n`);
-            Object.keys(userData.checkups).forEach(k => {
-                const x = userData.checkups[k];
-                csv += `${x.date},產檢紀錄-${x.timesName},W${x.week},${x.weight}kg\n`;
-            });
+            let csv = "\ufeff日期,項目,分類,數值\n";
+            userData.bp.forEach(x => csv += `${x.date},血壓,${bpTypeMap[x.type]},${x.sys}/${x.dia}\n`);
+            userData.glu.forEach(x => csv += `${x.date},血糖,${gluTypeMap[x.type]},${x.val}\n`);
             const blob = new Blob([csv], { type: 'text/csv' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `幸孕檔案夾紀錄_${new Date().toLocaleDateString()}.csv`;
+            a.download = `幸孕紀錄_${new Date().toLocaleDateString()}.csv`;
             a.click();
         }
 
